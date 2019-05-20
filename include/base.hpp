@@ -205,6 +205,4 @@ namespace TimeSeries
 
 
  }//end namespace ts
-#endif//TS_BASE_HPP
-
-
+#endif//TS_BASE_HPPs
