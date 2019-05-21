@@ -5,6 +5,12 @@
 #ifndef TS_BASE_HPP
 #define TS_BASE_HPP
 
+#ifdef TS_USE_MKL
+    #ifndef EIGEN_USE_MKL_ALL
+    #define EIGEN_USE_MKL_ALL
+    #endif
+#endif
+
 #include <Eigen/Core>
 #include <set>
 #include <string>
@@ -200,9 +206,59 @@ namespace TimeSeries
         void setTimes(T& newTimes);
         
         size_t getLength() { return length; }
+        
+        bool has_time_labels() { return has_times; }
 
     };
-
+    
+    /* ---------------------------------------------------------------------------------
+     ---------------------------------------------------------------------------------
+                    functions to interface with other container libraries
+     ---------------------------------------------------------------------------------
+     --------------------------------------------------------------------------------- */
+    //reads a csv into a ts object
+    template<
+        typename Series_t,
+        typename DateTime_t = boost::gregorian::date
+        >
+    extern TimeSeries::ts<Series_t, DateTime_t>
+    read_csv(std::string filename);
+    
+    //creates a ts object from an Eigen::Vector
+    template<
+        typename Series_t,
+        typename DateTime_t = boost::gregorian::date
+        >
+    extern TimeSeries::ts<Series_t, DateTime_t>
+    ts_from_eigen(Vec<Series_t> series);
+    
+    template<
+        typename Series_t,
+        typename DateTime_t = boost::gregorian::date
+        >
+    extern Vec<Series_t>
+    ts_to_eigen(TimeSeries::ts<Series_t, DateTime_t> series);
+    
+    /*
+     arma interface--"turn on" compilation of this code
+     by compiling with -DTS_USE_ARMA
+     */
+    #ifdef TS_USE_ARMA
+    #include <armadillo>
+    template<
+        typename Series_t,
+        typename DateTime_t = boost::gregorian::date
+        >
+    extern TimeSeries::ts<Series_t, DateTime_t>
+    ts_from_arma(arma::Col<Series_t> series);//TODO: implement this
+    
+    template<
+        typename Series_t,
+        typename DateTime_t = boost::gregorian::date
+        >
+    extern arma::Col<Series_t>
+    ts_to_arma(TimeSeries::ts<Series_t, DateTime_t> series);//TODO: implement this
+    #endif
 
  }//end namespace ts
 #endif//TS_BASE_HPPs
