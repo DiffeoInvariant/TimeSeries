@@ -14,6 +14,7 @@
 #include <Eigen/Core>
 #include <set>
 #include <string>
+#include <utility>
 #include "boost/date_time/gregorian/gregorian.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <type_traits>
@@ -50,7 +51,7 @@ namespace TimeSeries
      @return: std::multiset of DateTime_ts
      */
     template<typename DateTime_t>
-    static auto DateRange(DateTime_t start, size_t length)
+    auto DateRange(DateTime_t start, size_t length)
     {
         //iniitalize with initializer list
         std::multiset<DateTime_t> dtimes { start };
@@ -74,11 +75,17 @@ namespace TimeSeries
     class ts
     {
     protected:
-        Vec<Series_t>           data;
-        DateVec<DateTime_t>     times;
-        size_t                  length = 0;
-        bool                    has_times = false;//true iff times is initialized
+        Vec<Series_t>                          data;
+        std::optional<DateVec<DateTime_t>>     times;
+        size_t                                length = 0;
+
     public:
+        
+        typename iterator;
+        
+        typedef Series_t series_type;
+        
+        typedef DateTime_t datetime_type;
         
         //default ctor
         constexpr ts() {};
@@ -92,122 +99,63 @@ namespace TimeSeries
          Con is a stl-like container holding Series_t objects
          */
         template<typename Con, typename T>
-        ts(Con& _data, T& _times)
-        {
-            //check that Series_t is arithmetic
-            if(not std::is_arithmetic<Series_t>::value) {
-                throw TimeSeries::NonArithmeticTypeError;
-            }
-            
-            if(TimeSeries::is_1d_container<Con>::value) {
-                    
-                length = _data.size();
-                //is it convertible to a Vec<Series_t>?
-                if(std::is_convertible<Con, Vec<Series_t>>::value){
-                    data = _data;
-                } else {
-                    //_data is iterable, but not convertible to a Vec<Series_t>
-                    size_t i = 0;
-                    data = Vec<Series_t>(length);
-                    for(auto it : _data){
-                        data[i] = *it;
-                        i++;
-                    }//end for
-                }//end else convertible to Vec<Series_t>
-            }//end if is_1d_container<Con>
-            else {
-                //error: _data is not a container type
-                throw TimeSeries::NonContainerTypeError;
-            }//end data assignment/initialization
-            
-            if(TimeSeries::is_1d_container<T>::value){
-                auto dateLen = _times.size();
-                //T is a stl-like container of strings or datetimes
-                if(std::is_convertible<typename T::value_type, DateTime_t>::value) {
-                    /* if _times is the correct size assign, else treat
-                     the first value as a start DateTime_t and iterate by one
-                     up to the length of the series*/
-                    if(dateLen == length) {
-                        if(std::is_convertible<T, DateVec<DateTime_t>>::value){
-                            times = _times;
-                            has_times = true;
-                        } else {
-                            for(auto it : _times){
-                                times.insert(*it);
-                            }
-                        }//end else dateLen == length
-                    } else {
-                        //initialize datetime from start
-                        times = DateRange(_times[0], length);
-                        has_times = true;
-                    }
-                }//end if convertible
-                else {
-                    //not convertible type
-                    throw TimeSeries::NonConvertibleDateTimeError;
-                }
-            }//end if container
-            else {
-                //if _times is not a container, it must be a single start DateTime_t
-                if(std::is_convertible<T, DateTime_t>::value) {
-                    times = DateRange(_times[0], length);
-                    has_times = true;
-                } else {
-                    //not convertible type
-                    throw TimeSeries::NonConvertibleDateTimeError;
-                }
-            }//end case _times is not container
-            
-        };
+        ts(Con& _data, T& _times);
         
-        //construct from data only
-        template<typename Con>
-        ts(Con& _data)
-        {
-            //check that Series_t is arithmetic
-            if(not std::is_arithmetic<Series_t>::value) {
-                throw TimeSeries::NonArithmeticTypeError;
-            }
-            
-            if(TimeSeries::is_1d_container<Con>::value) {
-                
-                length = _data.size();
-                //is it convertible to a Vec<Series_t>?
-                if(std::is_convertible<Con, Vec<Series_t>>::value){
-                    data = _data;
-                } else {
-                    //_data is iterable, but not convertible to a Vec<Series_t>
-                    size_t i = 0;
-                    data = Vec<Series_t>(length);
-                    for(auto it : _data){
-                        data[i] = *it;
-                        i++;
-                    }//end for
-                }//end else convertible to Vec<Series_t>
-            }//end if is_1d_container<Con>
-            else {
-                //error: _data is not a container type
-                throw TimeSeries::NonContainerTypeError;
-            }
-        };
+        ts(ts<Series_t,DateTime_t>& other);
         
-        Vec<Series_t> getData() { return data; }
+        ts(ts<Series_t,DateTime_t>&& other);
+        
+        Vec<Series_t> getData() const noexcept;
+        
+        iterator begin() const;
+        
+        iterator end() const;
+
+        //returns an iterator to data.begin()
+        Vec<Series_t>::iterator dbegin() const;
+        
+        Vec<Series_t>::iterator dend() const;
+        
+        DateVec<DateTime_t>::iterator tbegin() const;
+        
+        DateVec<DateTime_t>::iterator tend() const;
         
         //TODO: template this like the ctor
-        void setData(Vec<Series_t>& newData){
-            data = newData;
-        }
+        void setData(Vec<Series_t>& newData);
         
-        DateVec<DateTime_t> getTimes() { return times; }
+        std::optional<DateVec<DateTime_t>>
+        getTimes() const;
 
         //T is either a DateTime_t or a vector of one of those
         //TODO: implement this
         template<typename T>
         void setTimes(T& newTimes);
         
-        size_t getLength() { return length; }
+        size_t getLength();
         
-        bool has_time_labels() { return has_times; }
+        bool has_time_labels();
+        
+        /**
+         *@param other: another ts object
+         *@param index: optional index at which to insert other
+         *@brief: attached other to *this
+         */
+        void
+        append(TimeSeries::ts<Series_t, DateTime_t>& other,
+                    std::optional<size_t> index);
+        
+        ts<Series_t, DateTime_t>
+        operator+(ts<Series_t, DateTime_t>& other);
+        
+        //add a scalar to all elements
+        ts<Series_t, DateTime_t>
+        operator+(Series_t addQ);
+        
+        //multiply all elements by a scalar
+        ts<Series_t, DateTime_t>
+        operator*(Series_t addQ);
+        
+        
 
     };
     
@@ -222,7 +170,7 @@ namespace TimeSeries
         typename DateTime_t = boost::gregorian::date
         >
     extern TimeSeries::ts<Series_t, DateTime_t>
-    read_csv(std::string filename);
+    read_csv(std::string& filename);
     
     //creates a ts object from an Eigen::Vector
     template<
@@ -230,14 +178,14 @@ namespace TimeSeries
         typename DateTime_t = boost::gregorian::date
         >
     extern TimeSeries::ts<Series_t, DateTime_t>
-    ts_from_eigen(Vec<Series_t> series);
+    ts_from_eigen(Vec<Series_t>& series);
     
     template<
         typename Series_t,
         typename DateTime_t = boost::gregorian::date
         >
     extern Vec<Series_t>
-    ts_to_eigen(TimeSeries::ts<Series_t, DateTime_t> series);
+    ts_to_eigen(TimeSeries::ts<Series_t, DateTime_t>& series);
     
     /*
      arma interface--"turn on" compilation of this code
@@ -250,14 +198,14 @@ namespace TimeSeries
         typename DateTime_t = boost::gregorian::date
         >
     extern TimeSeries::ts<Series_t, DateTime_t>
-    ts_from_arma(arma::Col<Series_t> series);//TODO: implement this
+    ts_from_arma(arma::Col<Series_t>& series);//TODO: implement this
     
     template<
         typename Series_t,
         typename DateTime_t = boost::gregorian::date
         >
     extern arma::Col<Series_t>
-    ts_to_arma(TimeSeries::ts<Series_t, DateTime_t> series);//TODO: implement this
+    ts_to_arma(TimeSeries::ts<Series_t, DateTime_t>& series);//TODO: implement this
     #endif
 
  }//end namespace ts

@@ -30,7 +30,6 @@ namespace TimeSeries
                 void_t<
                     typename T::value_type,
                     typename T::size_type,
-                    typename T::allocator_type,
                     typename T::iterator,
                     typename T::const_iterator,
                     decltype(declval<T>().size()),
