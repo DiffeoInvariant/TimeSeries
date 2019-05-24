@@ -24,23 +24,24 @@ namespace TimeSeries
     /**
      ts_type is a time series type, e.g. ts
      */
-    template<typename ts_type = TimeSeries::ts,
-             typename Param_t = double,
-             typename RetPars...>
+    template<typename ts_type, out_t>
     class Model
     {
-        using out_t = ModelOutput<Param_t, RetPars...>;
     protected:
         ts_type series;
         out_t   result;
         
     public:
         //fitting method
-        virtual out_t fit() = 0;
+        virtual out_t fit();
         
         //returns log likelihood of model
-        virtual double logLik() = 0;
+        virtual double logLik();
         
+        //prints a summary
+        virtual void summary();
+        
+        virtual std::vector<Param_t> params();
     };
     
     

@@ -144,16 +144,22 @@ namespace TimeSeries
         append(TimeSeries::ts<Series_t, DateTime_t>& other,
                     std::optional<size_t> index);
         
-        ts<Series_t, DateTime_t>
+        TimeSeries::ts<Series_t, DateTime_t> lag(int lagLen);
+        
+        TimeSeries::ts<Series_t, DateTime_t> diff(size_t nDiff = 1);
+        
+        TimeSeries::ts<Series_t, DateTime_t> integrate(size_t order);
+        
+        TimeSeries::ts<Series_t, DateTime_t>
         operator+(ts<Series_t, DateTime_t>& other);
         
         //add a scalar to all elements
-        ts<Series_t, DateTime_t>
+        TimeSeries::ts<Series_t, DateTime_t>
         operator+(Series_t addQ);
         
         //multiply all elements by a scalar
-        ts<Series_t, DateTime_t>
-        operator*(Series_t addQ);
+        TimeSeries::ts<Series_t, DateTime_t>
+        operator*(Series_t scale);
         
         
 
