@@ -17,5 +17,11 @@ For this project, refer to Effective Modern C++ by Scott Meyers as a style guide
 an exception
 */
 template<typename T>
-T add(T x1, T x2);
+T add(T x1, T x2)
+{
+  if(! std::is_arithmetic<T>::value){
+       throw "Non-arithmetic type error";
+  }
+  return x1 + x2;
+}
 ```
