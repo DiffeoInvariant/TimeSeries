@@ -18,10 +18,10 @@ namespace TimeSeries
      --------------------------------------------------------------------------------- */
     
     template<typename T>
-    Vec<double> ACF(Vec<T> series, size_t length);
+    extern Vec<double> ACF(Vec<T> series, size_t length);
     
     template<typename T>
-    Vec<double> pACF(Vec<T> series, size_t length);
+    extern Vec<double> pACF(Vec<T> series, size_t length);
     
     
     
@@ -45,7 +45,7 @@ namespace TimeSeries
                                     >;
     
     template<typename ts_type = ts<double>>
-    class ARMA : Model<ARIMAOutput>
+    class ARMA : protected Model<ARIMAOutput>
     {
         
     protected:
@@ -66,6 +66,8 @@ namespace TimeSeries
         ARMA(const ts_type& series);
         
         ARIMAOutput fit();
+        
+        ARIMAOutput fit(std::vector<size_t> fixedOrder);
         
         //fit on a subset of the series
         ARIMAOutput fit(size_t start_id,
@@ -92,7 +94,7 @@ namespace TimeSeries
         
         //returns a triple (p,0,q)
         std::vector<size_t>
-        estimateOrder(std::optional<std::vector<size_t>> maxOrders,
+        estimate_order(std::optional<std::vector<size_t>> maxOrders,
                       std::optional<std::vector<size_t>> fixedOrders)
         const;
         
@@ -121,6 +123,43 @@ namespace TimeSeries
         
     };
     
+    template<
+            ts_type,
+            bool fractional_order = false,
+            bool is_seasonal = false
+            >
+    class ARIMA : protected ARMA
+    {
+        
+    protected:
+        
+        bool fractional_order;
+        
+        bool is_seasonal;
+        
+    public:
+        
+        ARIMA() {};
+        
+        ARIMA(ts_type series);
+        
+        ARIMA(ts_type series, bool fractional, bool seasonal);
+        
+        //T is a size_t or a double
+        template<typename T>
+        T estimate_difference();
+        
+        std::vector<size_t> estimate_seasonality();
+    };
+    
+    template<typename ts_type>
+    using SARIMA = ARIMA<ts_type, false, true>
+    
+    template<typename ts_type>
+    using ARFIMA = ARIMA<ts_type, true, false>
+    
+    template<typename ts_type>
+    using SARFIMA = ARIMA<ts_type, true, true>
     
 }//end namespace TimeSeries
 
